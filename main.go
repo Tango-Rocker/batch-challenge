@@ -3,35 +3,42 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/Tango-Rocker/batch-challange/model"
 	"github.com/Tango-Rocker/batch-challange/validation"
+	"io"
 	"os"
+	"sync"
 )
 
+var ValidatorsMap = map[string]validation.Validator{
+	"float":   validation.FloatValidator,
+	"integer": validation.IntegerValidator,
+	"date":    validation.DateValidator,
+}
+
 const definitionJSON = `
-	{
-		"skip_header": true,
-		"columns": [
-			{
-				"name": "id",
-				"type": "integer",
-				"required": true
-			},
-			{
-				"name": "date",
-				"type": "date",
-				"required": true,
-				"formats": ["01/2006", "January 2006"]
-			},
-			{
-				"name": "amount",
-				"type": "float",
-				"required": true
-			}
-		]
-	}`
+{
+	"skip_header": true,
+	"columns": [
+		{
+			"name": "id",
+			"type": "integer",
+			"required": true
+		},
+		{
+			"name": "date",
+			"type": "date",
+			"required": true,
+			"formats": ["01/2006", "January 2006"]
+		},
+		{
+			"name": "amount",
+			"type": "float",
+			"required": true
+		}
+	]
+}`
 
 func main() {
 	path := os.Getenv("SOURCE_PATH")
@@ -45,96 +52,109 @@ func main() {
 	err := json.Unmarshal([]byte(definitionJSON), &def)
 	if err != nil {
 		fmt.Println("Error:", err)
+		return
 	}
 
-	data, err := validateCSVWithDefinition(fullPath, def)
+	file, err := os.Open(fullPath)
 	if err != nil {
 		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("CSV is valid!")
-	}
-
-	fmt.Println(data)
-}
-
-var ValidatorsMap = map[string]validation.Validator{
-	"float":   validation.FloatValidator,
-	"integer": validation.IntegerValidator,
-	"date":    validation.DateValidator,
-}
-
-func validateCSVWithDefinition(csvPath string, def model.CSVDefinition) ([]map[string]string, error) {
-	file, err := os.Open(csvPath)
-	if err != nil {
-		return nil, err
+		return
 	}
 	defer file.Close()
 
-	reader := csv.NewReader(file)
+	records := make(chan []string)
+	var wg sync.WaitGroup
+
+	// Start CSV reading and validation in a goroutine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := validateCSVWithDefinition(file, records, def); err != nil {
+			fmt.Println("Validation error:", err)
+			close(records)
+		}
+	}()
+
+	// Start processing the records in a separate goroutine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		processRecords(records, os.Stdout)
+	}()
+
+	wg.Wait()
+}
+
+func validateCSVWithDefinition(input io.Reader, records chan<- []string, def model.CSVDefinition) error {
+	reader := csv.NewReader(input)
 
 	if def.SkipHeader {
-		_, err = reader.Read()
-		if err != nil {
-			return nil, err
+		if _, err := reader.Read(); err != nil {
+			return err
 		}
 	}
-	mappedRecords := make([]map[string]string, 0)
-	records := make([][]string, 0)
+
 	i := 0
 	for {
 		record, err := reader.Read()
-		if err != nil {
-			fmt.Println("Error:", err)
+		if err == io.EOF {
 			break
 		}
-
-		if len(record) != len(def.Columns) {
-			return nil, fmt.Errorf("row %d has an incorrect number of columns", len(records))
+		if err != nil {
+			return err
 		}
 
-		if len(record) != len(def.Columns) {
-			return nil, fmt.Errorf("row %d has an incorrect number of columns", i+1)
+		// Validate and transform the record
+		validatedRecord, err := validateAndTransformRecord(record, def)
+		if err != nil {
+			return err
 		}
 
-		for j, value := range record {
-			colDef := def.Columns[j]
-			if value == "" && colDef.Required {
-				return nil, fmt.Errorf("row %d, Column %s is required but empty", i+1, colDef.Name)
-			}
-
-			if validator, exists := ValidatorsMap[colDef.Type]; exists {
-				transformedValue, err := validation.ValidateAndTransform(value, validator)
-				if err != nil {
-					return nil, fmt.Errorf("row %d, Column %s: %s", i+1, colDef.Name, err.Error())
-				}
-				record[j] = transformedValue
-			} else {
-				return nil, fmt.Errorf("row %d, Column %s: Unsupported column type", i+1, colDef.Name)
-			}
-		}
-
-		mappedRow, err2 := rowToMap(record, def)
-		if err2 != nil {
-			return nil, err2
-		}
-		mappedRecords = append(mappedRecords, mappedRow)
+		// Send the valid record to the channel
+		records <- validatedRecord
 		i++
 	}
 
-	return mappedRecords, nil
+	fmt.Printf("Validated %d records\n", i)
+	close(records)
+	return nil
 }
 
-func rowToMap(row []string, def model.CSVDefinition) (map[string]string, error) {
-	mappedRow := make(map[string]string)
+func processRecords(records <-chan []string, output io.Writer) {
+	i := 0
+	for record := range records {
+		// Process the record to construct the desired payload
+		// For the sake of the example, we just print it out.
+		_, err := fmt.Fprintln(output, record)
+		if err != nil {
+			fmt.Printf("Error writing record %d: %s\n", i, err.Error())
+		}
+		i++
+	}
+	fmt.Printf("Processed %d records\n", i)
+}
 
-	if len(row) != len(def.Columns) {
-		return nil, errors.New("row length doesn't match definition")
+func validateAndTransformRecord(record []string, def model.CSVDefinition) ([]string, error) {
+	if len(record) != len(def.Columns) {
+		return nil, fmt.Errorf("incorrect number of columns: got %d, want %d", len(record), len(def.Columns))
 	}
 
-	for i, value := range row {
+	for i, value := range record {
 		colDef := def.Columns[i]
-		mappedRow[colDef.Name] = value
+		if value == "" && colDef.Required {
+			return nil, fmt.Errorf("column %s is required but empty", colDef.Name)
+		}
+
+		if validator, exists := ValidatorsMap[colDef.Type]; exists {
+			transformedValue, err := validation.ValidateAndTransform(value, validator)
+			if err != nil {
+				return nil, fmt.Errorf("column %s: %s", colDef.Name, err.Error())
+			}
+			record[i] = transformedValue
+		} else {
+			return nil, fmt.Errorf("unsupported column type: %s", colDef.Type)
+		}
 	}
 
-	return mappedRow, nil
+	return record, nil
 }
