@@ -8,6 +8,11 @@ import (
 type Config struct {
 	SourcePath string `env:"DATA_PATH"`
 	SchemaPath string `env:"SCHEMA_PATH"`
+	Host       string `env:"DB_HOST"`
+	Port       string `env:"DB_PORT"`
+	User       string `env:"DB_USER"`
+	Pass       string `env:"DB_PASS"`
+	Name       string `env:"DB_NAME"`
 }
 
 func LoadConfig() (Config, error) {
