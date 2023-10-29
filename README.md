@@ -4,8 +4,31 @@
 
 ## Project Overview
 
+## Prerequisites
+
+- **Docker**
+- **Docker Compose**
+
+## installation
+To install the application, follow these steps:
+
+- Clone the repository to your local machine.
+- Navigate to the root directory of the project.
+- Run the installation script:
+- chmod +x install.sh
+- ./install.sh
+
+#### The script will interactively guide you through the setup process including:
+
+- Prompting for the directory path for storing app data.
+- Building the application binary.
+- Verifying the presence of Docker and Docker Compose, with an option to install if they're missing.
+- Setting up and starting the Docker containers for the app and the database.
+
 batch processing system designed to read, validate, and process monthly payment records from CSV files. 
 ## Technical Aspects
+
+
 
 The system comprises multiple Go packages, each with a specific role:
 
