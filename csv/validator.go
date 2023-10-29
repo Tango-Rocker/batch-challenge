@@ -1,4 +1,4 @@
-package validation
+package csv
 
 import (
 	"errors"
@@ -16,16 +16,6 @@ type Validator struct {
 type Rule struct {
 	Pattern            *regexp.Regexp
 	TransformationFunc func(string) (string, error)
-}
-
-func floatTransformation(input string) (string, error) {
-	processed := strings.ReplaceAll(input, ".", "")
-	processed = strings.ReplaceAll(processed, ",", ".")
-	_, err := strconv.ParseFloat(processed, 64)
-	if err != nil {
-		return "", err
-	}
-	return processed, nil
 }
 
 var FloatValidator = Validator{
@@ -53,7 +43,7 @@ var IntegerValidator = Validator{
 	},
 }
 
-func ValidateAndTransform(value string, validator Validator) (string, error) {
+func validateAndTransform(value string, validator Validator) (string, error) {
 	for _, rule := range validator.Rules {
 		if rule.Pattern.MatchString(value) {
 			return rule.TransformationFunc(value)

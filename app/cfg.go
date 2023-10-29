@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	SourcePath string `env:"SOURCE_PATH"`
+	SourcePath string `env:"DATA_PATH"`
 	SchemaPath string `env:"SCHEMA_PATH"`
 }
 

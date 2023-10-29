@@ -1,10 +1,8 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/schema"
 	"io"
 	"os"
 	"sync"
@@ -33,7 +31,7 @@ func (app *Application) Run() {
 	recordPipe := make(chan []string)
 	var wg sync.WaitGroup
 
-	// Start CSV reading and validation in a goroutine
+	// Start Schema reading and validation in a goroutine
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -65,19 +63,4 @@ func processRecords(records <-chan []string, output io.Writer) {
 		i++
 	}
 	fmt.Printf("Processed %d records\n", i)
-}
-
-func readSchema(path string) (schema.CSV, error) {
-	// Read schema from JSON
-	fmt.Println("reading from schema: ", path)
-	file, err := os.Open(path)
-	if err != nil {
-		return schema.CSV{}, err
-	}
-	defer file.Close()
-
-	var def schema.CSV
-	err = json.NewDecoder(file).Decode(&def)
-
-	return def, err
 }

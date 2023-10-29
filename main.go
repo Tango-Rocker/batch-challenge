@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/Tango-Rocker/batch-challange/app"
 	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/schema"
 	"os"
 )
 
@@ -27,7 +26,7 @@ func setupDependencies(err error, cfg app.Config) csv.Parser {
 	}
 	defer f.Close()
 
-	var def schema.CSV
+	var def csv.Schema
 	if err := json.NewDecoder(f).Decode(&def); err != nil {
 		panic(err)
 	}
