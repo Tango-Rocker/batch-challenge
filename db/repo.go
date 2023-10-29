@@ -3,61 +3,66 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+
+	"github.com/Tango-Rocker/batch-challange/model"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-type DataRecord struct {
-	ID    int    `json:"id"`
-	Value string `json:"value"`
+// Repository handles database operations.
+type Repository struct {
+	db *gorm.DB
+	l  *slog.Logger
 }
 
-// repository handles database operations.
-type repository struct {
-	pool *pgxpool.Pool
-	l    *slog.Logger
-}
+// NewRepository creates a new Repository with a GORM connection.
+func NewRepository(cfg *Config, l *slog.Logger) (*Repository, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
+		cfg.Host,
+		cfg.User,
+		cfg.Pass,
+		cfg.Name,
+		cfg.Port)
 
-// newRepository creates a new repository with a connection pool.
-func newRepository(ctx context.Context, dataSourceName string, l *slog.Logger) (*repository, error) {
-	pool, err := pgxpool.New(ctx, dataSourceName)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to database: %v", err)
+		l.Error("failed to connect to database: %v", err)
+		return nil, err
 	}
 
-	return &repository{pool: pool, l: l}, nil
+	sqlDB, err := db.DB()
+	if err != nil {
+		l.Error("failed to get database connection handle: %v", err)
+		return nil, err
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(0)
+
+	return &Repository{db: db, l: l}, nil
 }
 
-// InsertData inserts a slice of DataRecord into the database.
-func (r *repository) InsertData(ctx context.Context, records []DataRecord) error {
-	tx, err := r.pool.Begin(ctx)
-	r.l.Info("Transaction started")
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx) // This will be ignored if tx.Commit() is called
-
-	batch := &pgx.Batch{}
-	r.l.Info("Preparing batch size: %d", len(records))
-	for _, record := range records {
-		batch.Queue("INSERT INTO Transactions (id, value) VALUES ($1, $2)", record.ID, record.Value)
-	}
-	r.l.Info("Batch created")
-
-	results := tx.SendBatch(ctx, batch)
-	defer results.Close()
-
-	for range records {
-		if _, err := results.Exec(); err != nil {
-			return err
-		}
+// InsertData inserts a slice of DataRecord into the database using GORM.
+func (r *Repository) InsertData(ctx context.Context, records []model.Transaction) error {
+	r.l.Info("Inserting data")
+	// GORM handles transactions by default, so you just need to use Create method.
+	result := r.db.WithContext(ctx).Create(&records)
+	if result.Error != nil {
+		return result.Error
 	}
 
-	return tx.Commit(ctx)
+	r.l.Info(fmt.Sprintf("Inserted %d records", len(records)))
+	return nil
 }
 
 // Close terminates the database connection pool.
-func (r *repository) Close() {
-	r.pool.Close()
+func (r *Repository) Close() error {
+	sqlDB, err := r.db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get database connection handle: %v", err)
+	}
+	sqlDB.Close()
+	return nil
 }

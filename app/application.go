@@ -3,25 +3,26 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/Tango-Rocker/batch-challange/bussines"
 	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/db"
 	"os"
+	"time"
 )
 
 // TODO: i should refactor this a bit more with reader/writer interfaces
 // dont really care what kind of io is it really
 
 type Application struct {
-	Config
+	*Config
 	parser csv.Parser
-	writer *db.Service
+	writer *bussines.Worker
 }
 
-func New(config Config, p csv.Parser, service *db.Service) *Application {
+func New(config *Config, p csv.Parser, w *bussines.Worker) *Application {
 	return &Application{
 		Config: config,
 		parser: p,
-		writer: service,
+		writer: w,
 	}
 }
 
@@ -33,10 +34,14 @@ func (app *Application) Run(ctx context.Context) {
 	}
 	defer sourceFile.Close()
 
-	pipe := app.writer.Start(ctx)
+	app.writer.Start(ctx)
 
-	if err := app.parser.Consume(sourceFile, pipe); err != nil {
+	if err := app.parser.Consume(newExecutionID(sourceFile.Name()), sourceFile, app.writer); err != nil {
 		fmt.Println("Validation error:", err)
 	}
 
+}
+
+func newExecutionID(srcName string) string {
+	return fmt.Sprintf("batch-%d-%d-%s", os.Getpid(), time.Now().UnixNano(), srcName)
 }

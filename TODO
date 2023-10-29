@@ -1,7 +1,0 @@
-- add sql init scripts (or use flyway)
-- add tests
-- add slog
-- add data persistence (postgres)
-- add summarization logic
-- add email sending logic
-- decouple components with queues and channels

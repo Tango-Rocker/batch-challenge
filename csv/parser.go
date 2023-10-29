@@ -15,8 +15,15 @@ var validatorsMap = map[string]Validator{
 	"date":    DateValidator,
 }
 
+type Record struct {
+	Line        uint64
+	Offset      uint64
+	ExecutionId string
+	Values      map[string]interface{}
+}
+
 type Parser interface {
-	Consume(input io.Reader, records chan<- []byte) error
+	Consume(executionID string, input io.Reader, output io.Writer) error
 }
 
 type csvParser struct {
@@ -44,7 +51,7 @@ func NewCSVParser(schemaPath string, l *slog.Logger) Parser {
 
 //TODO: do not break the loop on error, just log it and continue
 
-func (p *csvParser) Consume(input io.Reader, records chan<- []byte) error {
+func (p *csvParser) Consume(executionId string, input io.Reader, output io.Writer) error {
 	p.l.Info("starting to consume csv file")
 	reader := csv.NewReader(input)
 
@@ -55,8 +62,8 @@ func (p *csvParser) Consume(input io.Reader, records chan<- []byte) error {
 		}
 	}
 
-	line := 1
-	offset := 0
+	line := uint64(1)
+	offset := uint64(0)
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -68,56 +75,68 @@ func (p *csvParser) Consume(input io.Reader, records chan<- []byte) error {
 			continue
 		}
 
-		validatedRecord, err := validateAndTransformRecord(record, p.def)
+		validatedRecord, size, err := validateAndTransformRecord(record, p.def)
 		if err != nil {
 			p.l.Error("error validating record", formatError(line, offset, err))
 			continue
 		}
 
-		jsonRecord, err := json.Marshal(validatedRecord)
+		offset += uint64(size)
+		line++
+
+		r := Record{
+			Line:        line,
+			Offset:      offset,
+			ExecutionId: executionId,
+			Values:      validatedRecord,
+		}
+
+		rbytes, err := json.Marshal(r)
 		if err != nil {
 			p.l.Error("error marshalling record", formatError(line, offset, err))
 			continue
 		}
 
-		offset += len(jsonRecord)
-		line++
-		records <- jsonRecord
+		_, err = output.Write(rbytes)
+		if err != nil {
+			p.l.Error("error marshalling record", formatError(line, offset, err))
+		}
 	}
 
 	p.l.Info("finished consuming csv file")
-	p.l.Info("Validated %d records\n", line)
-	close(records)
+	p.l.Info(fmt.Sprintf("Validated %d records\n", line))
 	return nil
 }
 
-func validateAndTransformRecord(record []string, def Schema) (map[string]string, error) {
-	validatedRecord := make(map[string]string)
+func validateAndTransformRecord(record []string, def Schema) (map[string]interface{}, int, error) {
+	validatedRecord := make(map[string]interface{})
 	if len(record) != len(def.Columns) {
-		return nil, fmt.Errorf("incorrect number of columns: got %d, want %d", len(record), len(def.Columns))
+		return nil, -1, fmt.Errorf("incorrect number of columns: got %d, want %d", len(record), len(def.Columns))
 	}
 
+	size := 0
 	for i, value := range record {
+		size += len(value)
 		colDef := def.Columns[i]
 		if value == "" && colDef.Required {
-			return nil, fmt.Errorf("column %s is required but empty", colDef.Name)
+			return nil, -1, fmt.Errorf("column %s is required but empty", colDef.Name)
 		}
 
 		if validator, exists := validatorsMap[colDef.Type]; exists {
 			transformedValue, err := validateAndTransform(value, validator)
 			if err != nil {
-				return nil, fmt.Errorf("column %s: %s", colDef.Name, err.Error())
+				return nil, -1, fmt.Errorf("column %s: %s", colDef.Name, err.Error())
 			}
 			// Assign the transformed value to the corresponding column name
 			validatedRecord[colDef.Name] = transformedValue
 		} else {
-			return nil, fmt.Errorf("unsupported column type: %s", colDef.Type)
+			return nil, -1, fmt.Errorf("unsupported column type: %s", colDef.Type)
 		}
 	}
 
-	return validatedRecord, nil
+	return validatedRecord, size, nil
 }
 
-func formatError(line, offset int, err error) error {
+func formatError(line, offset uint64, err error) error {
 	return fmt.Errorf("line %d, offset %d: %s", line, offset, err.Error())
 }

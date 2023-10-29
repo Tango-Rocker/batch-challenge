@@ -1,4 +1,4 @@
-package db
+package bussines
 
 import (
 	"fmt"
@@ -6,11 +6,8 @@ import (
 )
 
 type Config struct {
-	Host string `env:"DB_HOST"`
-	Port string `env:"DB_PORT"`
-	User string `env:"DB_USER"`
-	Pass string `env:"DB_PASS"`
-	Name string `env:"DB_NAME"`
+	BufferSize   int `env:"BUFFER_SIZE" envDefault:"1000"`
+	FlushTimeout int `env:"FLUSH_TIMEOUT_MS" envDefault:"1000"`
 }
 
 func LoadEnvConfig() (Config, error) {
