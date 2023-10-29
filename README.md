@@ -1,13 +1,12 @@
-# batch-challange
+# Batch-Challange
 
-# README
-
-## Project Overview
+## Overview
+Simple batch processing system designed to read, validate, and process monthly payment records from CSV files.
 
 ## Prerequisites
 
-- **Docker**
-- **Docker Compose**
+- Docker
+- Docker Compose
 
 ## installation
 To install the application, follow these steps:
@@ -25,7 +24,7 @@ To install the application, follow these steps:
 - Verifying the presence of Docker and Docker Compose, with an option to install if they're missing.
 - Setting up and starting the Docker containers for the app and the database.
 
-batch processing system designed to read, validate, and process monthly payment records from CSV files. 
+ 
 ## Technical Aspects
 
 
