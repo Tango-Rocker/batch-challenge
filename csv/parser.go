@@ -2,8 +2,10 @@ package csv
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 )
 
 var validatorsMap = map[string]Validator{
@@ -13,18 +15,29 @@ var validatorsMap = map[string]Validator{
 }
 
 type Parser interface {
-	Consume(input io.Reader, records chan<- []string) error
+	Consume(input io.Reader, records chan<- []byte) error
 }
 
 type csvParser struct {
 	def Schema
 }
 
-func NewCSVParser(def Schema) Parser {
+func NewCSVParser(schemaPath string) Parser {
+	f, err := os.Open(schemaPath)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var def Schema
+	if err := json.NewDecoder(f).Decode(&def); err != nil {
+		panic(err)
+	}
+
 	return &csvParser{def: def}
 }
 
-func (p *csvParser) Consume(input io.Reader, records chan<- []string) error {
+func (p *csvParser) Consume(input io.Reader, records chan<- []byte) error {
 	reader := csv.NewReader(input)
 
 	if p.def.SkipHeader {

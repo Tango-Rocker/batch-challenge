@@ -1,36 +1,28 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/Tango-Rocker/batch-challange/app"
 	"github.com/Tango-Rocker/batch-challange/csv"
-	"os"
+	"github.com/Tango-Rocker/batch-challange/db"
 )
 
 func main() {
-	cfg, err := app.LoadConfig()
+	//this should be parser config
+	appCfg, err := app.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+	parser := csv.NewCSVParser(appCfg.SchemaPath)
+
+	dbCfg, err := db.LoadConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	p := setupDependencies(err, cfg)
-
-	app.New(cfg, p).Run()
-}
-
-func setupDependencies(err error, cfg app.Config) csv.Parser {
-	f, err := os.Open(cfg.SchemaPath)
+	dbService, err := db.NewService(dbCfg)
 	if err != nil {
 		panic(err)
-		return nil
-	}
-	defer f.Close()
-
-	var def csv.Schema
-	if err := json.NewDecoder(f).Decode(&def); err != nil {
-		panic(err)
 	}
 
-	p := csv.NewCSVParser(def)
-	return p
+	app.New(appCfg, parser, dbService).Run()
 }

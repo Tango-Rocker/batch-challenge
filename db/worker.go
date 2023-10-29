@@ -9,7 +9,8 @@ import (
 
 // Worker processes data and communicates with the repository.
 type Worker struct {
-	repo         *Repository
+	running      bool
+	repo         *repository
 	dataChannel  chan []byte
 	bufferSize   int
 	buffer       []DataRecord
@@ -17,10 +18,10 @@ type Worker struct {
 }
 
 // NewWorker creates a new Worker instance.
-func NewWorker(repo *Repository, bufferSize int, flushTimeout time.Duration) *Worker {
+func NewWorker(repo *repository, bufferSize int, flushTimeout time.Duration) *Worker {
 	return &Worker{
 		repo:         repo,
-		dataChannel:  make(chan []byte),
+		dataChannel:  make(chan []string),
 		bufferSize:   bufferSize,
 		buffer:       make([]DataRecord, 0, bufferSize),
 		flushTimeout: flushTimeout,
@@ -29,11 +30,16 @@ func NewWorker(repo *Repository, bufferSize int, flushTimeout time.Duration) *Wo
 
 // Start begins processing data from the data channel.
 func (w *Worker) Start(ctx context.Context) {
+	if w.running {
+		return
+	}
+	w.running = true
 	timeout := time.NewTimer(w.flushTimeout)
 
 	for {
 		select {
 		case <-ctx.Done():
+			w.running = false
 			return
 		case jsonData := <-w.dataChannel:
 			var record DataRecord
@@ -61,17 +67,4 @@ func (w *Worker) flushBuffer(ctx context.Context) {
 		log.Printf("Error inserting data: %v", err)
 	}
 	w.buffer = w.buffer[:0] // Clear the buffer
-}
-
-func example() {
-	ctx := context.Background()
-
-	repo, err := NewRepository("")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer repo.Close()
-
-	worker := NewWorker(repo, 100, 30*time.Second)
-	go worker.Start(ctx)
 }

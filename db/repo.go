@@ -10,22 +10,22 @@ type DataRecord struct {
 	Value string `json:"value"`
 }
 
-// Repository handles database operations.
-type Repository struct {
+// repository handles database operations.
+type repository struct {
 	db *sql.DB
 }
 
-// NewRepository creates a new Repository.
-func NewRepository(dataSourceName string) (*Repository, error) {
+// newRepository creates a new repository.
+func newRepository(dataSourceName string) (*repository, error) {
 	db, err := sql.Open("postgres", dataSourceName)
 	if err != nil {
 		return nil, err
 	}
-	return &Repository{db: db}, nil
+	return &repository{db: db}, nil
 }
 
 // InsertData inserts a slice of DataRecord into the database.
-func (r *Repository) InsertData(ctx context.Context, records []DataRecord) error {
+func (r *repository) InsertData(ctx context.Context, records []DataRecord) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -47,6 +47,6 @@ func (r *Repository) InsertData(ctx context.Context, records []DataRecord) error
 }
 
 // Close terminates the database connection.
-func (r *Repository) Close() error {
+func (r *repository) Close() error {
 	return r.db.Close()
 }
