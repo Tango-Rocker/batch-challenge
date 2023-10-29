@@ -1,4 +1,4 @@
-# Batch-Challange
+# Batch-Challenge
 
 ## Overview
 Simple batch processing system designed to read, validate, and process monthly payment records from CSV files.
