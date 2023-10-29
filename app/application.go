@@ -34,7 +34,7 @@ func (app *Application) Run(ctx context.Context) {
 	}
 	defer sourceFile.Close()
 
-	app.writer.Start(ctx)
+	go app.writer.Start(ctx)
 
 	if err := app.parser.Consume(newExecutionID(sourceFile.Name()), sourceFile, app.writer); err != nil {
 		fmt.Println("Validation error:", err)

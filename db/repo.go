@@ -3,7 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
+	"gorm.io/gorm/logger"
+	"log"
 	"log/slog"
+	"os"
+	"time"
 
 	"github.com/Tango-Rocker/batch-challange/model"
 	"gorm.io/driver/postgres"
@@ -25,9 +29,27 @@ func NewRepository(cfg *Config, l *slog.Logger) (*Repository, error) {
 		cfg.Name,
 		cfg.Port)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold:             time.Second,   // Slow SQL threshold
+			LogLevel:                  logger.Silent, // Log level
+			IgnoreRecordNotFoundError: true,          // Ignore ErrRecordNotFound error for logger
+			ParameterizedQueries:      true,          // Don't include params in the SQL log
+			Colorful:                  false,         // Disable color
+		},
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		l.Error("failed to connect to database: %v", err)
+		return nil, err
+	}
+
+	err = db.AutoMigrate(&model.Transaction{})
+	if err != nil {
 		return nil, err
 	}
 
