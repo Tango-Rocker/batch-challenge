@@ -50,6 +50,7 @@ func NewCSVParser(schemaPath string, l *slog.Logger) Parser {
 }
 
 //TODO: do not break the loop on error, just log it and continue
+// or send it to an error queue for db insertion
 
 func (p *csvParser) Consume(executionId string, input io.Reader, output io.Writer) error {
 	p.l.Info("starting to consume csv file")

@@ -1,4 +1,4 @@
-package bussines
+package business
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func (w *Worker) Write(p []byte) (n int, err error) {
 }
 
 // NewWorker creates a new Worker instance.
-func NewWorker(cfg *Config, repo *db.Repository, l *slog.Logger) *Worker {
+func NewWorker(cfg *WorkerConfig, repo *db.Repository, l *slog.Logger) *Worker {
 	return &Worker{
 		repo:         repo,
 		dataChannel:  make(chan []byte),

@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/Tango-Rocker/batch-challange/bussines"
+	"github.com/Tango-Rocker/batch-challange/business"
 	"github.com/Tango-Rocker/batch-challange/csv"
 	"os"
 	"time"
@@ -15,10 +15,10 @@ import (
 type Application struct {
 	*Config
 	parser csv.Parser
-	writer *bussines.Worker
+	writer *business.Worker
 }
 
-func New(config *Config, p csv.Parser, w *bussines.Worker) *Application {
+func New(config *Config, p csv.Parser, w *business.Worker) *Application {
 	return &Application{
 		Config: config,
 		parser: p,

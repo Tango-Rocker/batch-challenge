@@ -3,14 +3,18 @@ package main
 import (
 	"context"
 	"github.com/Tango-Rocker/batch-challange/app"
-	"github.com/Tango-Rocker/batch-challange/bussines"
+	"github.com/Tango-Rocker/batch-challange/business"
 	"github.com/Tango-Rocker/batch-challange/csv"
 	"github.com/Tango-Rocker/batch-challange/db"
 	"github.com/Tango-Rocker/batch-challange/utils"
 	"log/slog"
 )
 
+//TODO: make execution-id unique and add a model for it
+
 func main() {
+	business.Send()
+
 	ctx := context.Background()
 
 	logger := slog.Default().With(
@@ -43,12 +47,12 @@ func setupRepository(dbCfg *db.Config, logger *slog.Logger) *db.Repository {
 	return repository
 }
 
-func setupInsertWorker(repository *db.Repository, logger *slog.Logger) *bussines.Worker {
-	bsCfg, err := utils.LoadEnvConfig[bussines.Config]()
+func setupInsertWorker(repository *db.Repository, logger *slog.Logger) *business.Worker {
+	bsCfg, err := utils.LoadEnvConfig[business.WorkerConfig]()
 	if err != nil {
 		panic(err)
 	}
 
-	worker := bussines.NewWorker(bsCfg, repository, logger)
+	worker := business.NewWorker(bsCfg, repository, logger)
 	return worker
 }
