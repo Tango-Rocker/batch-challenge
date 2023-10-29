@@ -1,26 +1,31 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/Tango-Rocker/batch-challange/csv"
-	"io"
+	"github.com/Tango-Rocker/batch-challange/db"
 	"os"
-	"sync"
 )
+
+// TODO: i should refactor this a bit more with reader/writer interfaces
+// dont really care what kind of io is it really
 
 type Application struct {
 	Config
 	parser csv.Parser
+	writer *db.Service
 }
 
-func New(config Config, p csv.Parser) *Application {
+func New(config Config, p csv.Parser, service *db.Service) *Application {
 	return &Application{
 		Config: config,
 		parser: p,
+		writer: service,
 	}
 }
 
-func (app *Application) Run() {
+func (app *Application) Run(ctx context.Context) {
 	fmt.Println("reading from source: ", app.SourcePath)
 	sourceFile, err := os.Open(app.SourcePath)
 	if err != nil {
@@ -28,39 +33,10 @@ func (app *Application) Run() {
 	}
 	defer sourceFile.Close()
 
-	recordPipe := make(chan []string)
-	var wg sync.WaitGroup
+	pipe := app.writer.Start(ctx)
 
-	// Start Schema reading and validation in a goroutine
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := app.parser.Consume(sourceFile, recordPipe); err != nil {
-			fmt.Println("Validation error:", err)
-			close(recordPipe)
-		}
-	}()
-
-	// Start processing the recordPipe in a separate goroutine
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		processRecords(recordPipe, os.Stdout)
-	}()
-
-	wg.Wait()
-}
-
-func processRecords(records <-chan []string, output io.Writer) {
-	i := 0
-	for record := range records {
-		// Process the record to construct the desired payload
-		// For the sake of the example, we just print it out.
-		_, err := fmt.Fprintln(output, record)
-		if err != nil {
-			fmt.Printf("Error writing record %d: %s\n", i, err.Error())
-		}
-		i++
+	if err := app.parser.Consume(sourceFile, pipe); err != nil {
+		fmt.Println("Validation error:", err)
 	}
-	fmt.Printf("Processed %d records\n", i)
+
 }
