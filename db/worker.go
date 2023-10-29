@@ -21,7 +21,7 @@ type Worker struct {
 func NewWorker(repo *repository, bufferSize int, flushTimeout time.Duration) *Worker {
 	return &Worker{
 		repo:         repo,
-		dataChannel:  make(chan []string),
+		dataChannel:  make(chan []byte),
 		bufferSize:   bufferSize,
 		buffer:       make([]DataRecord, 0, bufferSize),
 		flushTimeout: flushTimeout,

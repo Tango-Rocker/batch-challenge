@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 )
 
@@ -13,7 +14,7 @@ type Service struct {
 
 const postgresConnectionFormat = "host=%s port=%s user=%s password=%s dbname=%s sslmode=disable"
 
-func NewService(cfg Config) (*Service, error) {
+func NewService(cfg Config, ctx context.Context, l *slog.Logger) (*Service, error) {
 
 	url := fmt.Sprintf(postgresConnectionFormat,
 		cfg.Host,
@@ -22,7 +23,7 @@ func NewService(cfg Config) (*Service, error) {
 		cfg.Pass,
 		cfg.Name)
 
-	repo, err := newRepository(url)
+	repo, err := newRepository(ctx, url, l)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +37,6 @@ func NewService(cfg Config) (*Service, error) {
 }
 
 func (s *Service) Start(ctx context.Context) chan []byte {
-	s.worker.Start(ctx)
+	go s.worker.Start(ctx)
 	return s.worker.dataChannel
 }

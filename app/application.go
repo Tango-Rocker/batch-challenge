@@ -25,16 +25,13 @@ func New(config Config, p csv.Parser, service *db.Service) *Application {
 	}
 }
 
-func (app *Application) Run() {
+func (app *Application) Run(ctx context.Context) {
 	fmt.Println("reading from source: ", app.SourcePath)
 	sourceFile, err := os.Open(app.SourcePath)
 	if err != nil {
 		panic(err)
 	}
 	defer sourceFile.Close()
-
-	//generate a new execution context with some uuid
-	ctx := context.Background()
 
 	pipe := app.writer.Start(ctx)
 
