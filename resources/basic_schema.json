@@ -1,0 +1,21 @@
+{
+  "skip_header": true,
+  "columns": [
+    {
+      "name": "id",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "required": true,
+      "formats": ["01/2006", "January 2006"]
+    },
+    {
+      "name": "amount",
+      "type": "float",
+      "required": true
+    }
+  ]
+}
