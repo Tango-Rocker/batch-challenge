@@ -4,7 +4,8 @@ This document outlines the `batch-challenge` project, a Go application designed 
 
 ## Overview
 
-The application leverages concurrency to process large CSV files efficiently. It uses a modular design with distinct components handling parsing, writing, relaying streams, and summarizing data. The project is configured to run in a Docker environment, with PostgreSQL as the database backend.
+The application leverages concurrency to process large CSV files efficiently. It uses a modular design with distinct components handling parsing, writing, relaying streams, and summarizing data. T
+he project is configured to run in a Docker environment, with PostgreSQL as the database backend.
 
 ## Requirements
 
@@ -15,7 +16,9 @@ The application leverages concurrency to process large CSV files efficiently. It
 
 ## Configuration
 
-Configuration is managed through environment variables. These include paths to the data and schema files (`DATA_PATH`, `SCHEMA_PATH`), database connection details (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`), and email server settings (`MAIL_SERVER_HOST`, `MAIL_SERVER_PORT`, `MAIL_ACCOUNT`, `MAIL_PASSWORD`).
+Configuration is managed through environment variables. These include paths to the data and schema files (`DATA_PATH`), 
+database connection details (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`),
+and email server settings (`MAIL_SERVER_HOST`, `MAIL_SERVER_PORT`, `MAIL_ACCOUNT`, `MAIL_PASSWORD`).
 
 ## Components
 
