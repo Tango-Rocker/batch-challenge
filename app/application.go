@@ -57,6 +57,8 @@ func (app *Application) Run(ctx context.Context) {
 	if err != nil {
 		app.l.Error(err.Error())
 	}
+
+	select {}
 }
 
 func newExecutionID(srcName string) string {

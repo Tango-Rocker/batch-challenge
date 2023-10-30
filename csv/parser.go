@@ -28,11 +28,12 @@ type Parser interface {
 }
 
 type csvParser struct {
-	def Schema
-	l   *slog.Logger
+	def    Schema
+	l      *slog.Logger
+	notify chan bool
 }
 
-func NewCSVParser(schemaPath string, l *slog.Logger) Parser {
+func NewCSVParser(schemaPath string, notify chan bool, l *slog.Logger) Parser {
 	f, err := os.Open(schemaPath)
 	if err != nil {
 		panic(err)
@@ -45,11 +46,14 @@ func NewCSVParser(schemaPath string, l *slog.Logger) Parser {
 	}
 
 	return &csvParser{
-		def: def,
-		l:   l,
+		def:    def,
+		l:      l,
+		notify: notify,
 	}
 }
 func (p *csvParser) Consume(executionId string, input io.Reader, output chan []byte) error {
+	defer close(output)
+
 	p.l.Info("starting to consume csv file")
 	reader := csv.NewReader(input)
 
@@ -69,12 +73,14 @@ func (p *csvParser) Consume(executionId string, input io.Reader, output chan []b
 			break
 		}
 		if err != nil {
+			p.signalError()
 			p.l.Error("error reading record", formatError(line, offset, err))
 			continue
 		}
 
 		validatedRecord, size, err := validateAndTransformRecord(record, p.def)
 		if err != nil {
+			p.signalError()
 			p.l.Error("error validating record", formatError(line, offset, err))
 			continue
 		}
@@ -91,6 +97,7 @@ func (p *csvParser) Consume(executionId string, input io.Reader, output chan []b
 
 		rbytes, err := json.Marshal(r)
 		if err != nil {
+			p.notify <- false
 			p.l.Error("error marshalling record", formatError(line, offset, err))
 			continue
 		}
@@ -105,9 +112,23 @@ func (p *csvParser) Consume(executionId string, input io.Reader, output chan []b
 
 	p.l.Info("finished consuming csv file")
 	p.l.Info(fmt.Sprintf("Validated %d records\n", line))
+	p.signalSuccess()
 	return nil
 }
 
+func (p *csvParser) signalError() {
+	if !nonBlockingSend(p.notify, false) {
+		p.l.Error("error sending signal to notify channel")
+	}
+}
+
+func (p *csvParser) signalSuccess() {
+	if !nonBlockingSend(p.notify, true) {
+		p.l.Error("error sending signal to notify channel")
+	}
+}
+
+// TODO: review these 2 fucntions, they kinda suck
 func validateAndTransformRecord(record []string, def Schema) (map[string]interface{}, int, error) {
 	validatedRecord := make(map[string]interface{})
 	if len(record) != len(def.Columns) {
@@ -135,6 +156,15 @@ func validateAndTransformRecord(record []string, def Schema) (map[string]interfa
 	}
 
 	return validatedRecord, size, nil
+}
+
+func nonBlockingSend(ch chan<- bool, data bool) bool {
+	select {
+	case ch <- data:
+		return true
+	default:
+		return false
+	}
 }
 
 func formatError(line, offset uint64, err error) error {

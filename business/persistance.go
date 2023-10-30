@@ -3,7 +3,6 @@ package business
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/Tango-Rocker/batch-challange/csv"
 	"github.com/Tango-Rocker/batch-challange/db"
 	"github.com/Tango-Rocker/batch-challange/model"
@@ -32,11 +31,11 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 func NewWriter(cfg *WriterConfig, repo *db.Repository, l *slog.Logger) *Writer {
 	return &Writer{
 		repo:         repo,
-		dataChannel:  make(chan []byte),
+		dataChannel:  make(chan []byte, 1000),
 		bufferSize:   cfg.BufferSize,
 		buffer:       make([]model.Transaction, 0, cfg.BufferSize),
 		flushTimeout: time.Duration(cfg.FlushTimeout) * time.Millisecond,
-		l:            l,
+		l:            l.With(slog.String("service", "db-writer")),
 	}
 }
 
@@ -60,7 +59,14 @@ func (w *Writer) run(ctx context.Context) {
 			w.l.Info("Stopping BufferedInsert worker")
 
 			return
-		case jsonData := <-w.dataChannel:
+		case jsonData, ok := <-w.dataChannel:
+
+			if !ok {
+				w.l.Info("Data channel closed, stopping service")
+				w.flushBuffer(ctx)
+				return
+			}
+
 			//TODO: dropped data should be logged and stored in the database for later processing
 			var record csv.Record
 			if err := json.Unmarshal(jsonData, &record); err != nil {
@@ -101,22 +107,4 @@ func (w *Writer) flushBuffer(ctx context.Context) {
 
 func (w *Writer) GetInputChannel() chan []byte {
 	return w.dataChannel
-}
-func mapRecordToTransaction(record *csv.Record) (*model.Transaction, error) {
-	valuesJSON, err := json.Marshal(record.Values)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling values: %v", err)
-	}
-
-	var transaction model.Transaction
-	err = json.Unmarshal(valuesJSON, &transaction)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling into Transaction: %v", err)
-	}
-
-	transaction.BatchId = record.ExecutionId
-	transaction.Line = int(record.Line)     // Converting uint64 to int
-	transaction.Offset = int(record.Offset) // Converting uint64 to int
-
-	return &transaction, nil
 }

@@ -35,7 +35,7 @@ func NewEmailService(cfg *MailConfig, l *slog.Logger) *EmailService {
 	return &EmailService{
 		from:   cfg.Account,
 		client: d,
-		l:      l,
+		l:      l.With(slog.String("service", "mail")),
 	}
 }
 

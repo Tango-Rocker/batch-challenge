@@ -35,7 +35,8 @@ func main() {
 		panic(err)
 	}
 
-	parser := csv.NewCSVParser(appCfg.SchemaPath, logger)
+	parserSuccessNotify := make(chan bool, 25)
+	parser := csv.NewCSVParser(appCfg.SchemaPath, parserSuccessNotify, logger)
 
 	relay := business.NewStreamRelayService(logger)
 
@@ -43,7 +44,7 @@ func main() {
 	writer := setupWriter(repository, logger)
 
 	mailService := business.NewEmailService(mailCfg, logger)
-	summarizer := business.NewSummaryService(mailService, logger)
+	summarizer := business.NewSummaryService(mailService, parserSuccessNotify, logger)
 
 	app.New(
 		appCfg.SourcePath,
