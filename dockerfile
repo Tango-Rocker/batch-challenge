@@ -1,7 +1,14 @@
-FROM alpine:latest
+FROM golang:latest
 
 WORKDIR /app
-COPY exec_app /app/
-COPY resources/basic_schema.json /app/
 
-CMD ["/app/exec_app"]
+COPY go.mod go.sum ./
+COPY resources/basic_schema.json .
+
+RUN go mod download
+COPY . .
+RUN go build -o main .
+#EXPOSE 8080
+
+# Command to run the executable
+CMD ["./main"]

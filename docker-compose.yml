@@ -2,14 +2,18 @@ version: '3.3'
 
 services:
   app:
-    image: batch:latest
+    image: demo_app:latest
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_USER=user
       - DB_PASS=password
       - DB_NAME=batchdb
-      - DATA_PATH=/app/data
+      - MAIL_SERVER_HOST=smtp.gmail.com
+      - MAIL_SERVER_PORT=587
+      - MAIL_ACCOUNT=batchappdemo555@gmail.com
+      - MAIL_PASSWORD=obtp phtd dyse egat
+      - DATA_PATH=/app/data/data.csv
       - SCHEMA_PATH=/app/basic_schema.json
     depends_on:
       - db
@@ -20,6 +24,7 @@ services:
 
   db:
     image: postgres:13
+    container_name: db
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password

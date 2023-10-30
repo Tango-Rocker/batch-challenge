@@ -21,8 +21,13 @@ This guide covers the essentials to get the Batch Processing Application up and 
 Set the following environment variables for the docker-compose file or use a `.env` file:
 
 - Database credentials: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`
-- Data paths: `DATA_PATH`
+- Data paths: `DATA_PATH`  
+  this is the path to the directory containing the CSV file to be processed ("data.csv" as default)
 - Mail server settings (if needed)
+
+## Generating .csv
+
+/gen/csv_gen.go generates a random csv file with 100000 rows using a simple format ready to use
 
 ## Build and Run
 
@@ -31,16 +36,9 @@ Execute the following script to build and start the application:
 ```bash
 #!/bin/bash
 
-# Stop on the first sign of trouble
-set -e
-
-# Build the Go application
-echo "Building Go application..."
-go build -o exec_app
-
 # Build the Docker image
 echo "Building Docker image..."
-docker build -t batch:latest .
+docker build -t demo_app:latest .
 
 # Start the entire stack using Docker Compose
 echo "Starting services with Docker Compose..."
