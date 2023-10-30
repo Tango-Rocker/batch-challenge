@@ -3,9 +3,9 @@ package business
 import (
 	"context"
 	"encoding/json"
-	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/db"
-	"github.com/Tango-Rocker/batch-challange/model"
+	"github.com/Tango-Rocker/batch-challenge/csv"
+	"github.com/Tango-Rocker/batch-challenge/db"
+	"github.com/Tango-Rocker/batch-challenge/model"
 	"log"
 	"log/slog"
 	"time"

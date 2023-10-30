@@ -1,4 +1,4 @@
-module github.com/Tango-Rocker/batch-challange
+module github.com/Tango-Rocker/batch-challenge
 
 go 1.21
 

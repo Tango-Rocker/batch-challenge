@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/Tango-Rocker/batch-challange/app"
-	"github.com/Tango-Rocker/batch-challange/business"
-	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/db"
-	"github.com/Tango-Rocker/batch-challange/utils"
+	"github.com/Tango-Rocker/batch-challenge/app"
+	"github.com/Tango-Rocker/batch-challenge/business"
+	"github.com/Tango-Rocker/batch-challenge/csv"
+	"github.com/Tango-Rocker/batch-challenge/db"
+	"github.com/Tango-Rocker/batch-challenge/utils"
 	"log/slog"
 )
 
@@ -39,7 +39,6 @@ func main() {
 	parser := csv.NewCSVParser(appCfg.SchemaPath, parserSuccessNotify, logger)
 
 	relay := business.NewStreamRelayService(logger)
-
 	repository := setupRepository(dbCfg, logger)
 	writer := setupWriter(repository, logger)
 

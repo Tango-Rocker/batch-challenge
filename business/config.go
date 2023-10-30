@@ -3,8 +3,8 @@ package business
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Tango-Rocker/batch-challange/csv"
-	"github.com/Tango-Rocker/batch-challange/model"
+	"github.com/Tango-Rocker/batch-challenge/csv"
+	"github.com/Tango-Rocker/batch-challenge/model"
 )
 
 type WriterConfig struct {

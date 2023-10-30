@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Tango-Rocker/batch-challange/model"
+	"github.com/Tango-Rocker/batch-challenge/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Tango-Rocker/batch-challange/csv"
+	"github.com/Tango-Rocker/batch-challenge/csv"
 	"log/slog"
 	"time"
 )

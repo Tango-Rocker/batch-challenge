@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
   app:
-    build: .
+    image: batch:latest
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -10,14 +10,13 @@ services:
       - DB_PASS=password
       - DB_NAME=batchdb
       - DATA_PATH=/app/data
-      - SCHEMA_PATH=/app/schema.json
-      - # The environment variable pointing to the mounted directory
+      - SCHEMA_PATH=/app/basic_schema.json
     depends_on:
       - db
     ports:
       - "8080:8080"
     volumes:
-      - /home/a446123/devOps/demo_data:/app/data  # Mount the host directory to the container
+      - /home/a446123/devOps/demo_data:/app/data
 
   db:
     image: postgres:13

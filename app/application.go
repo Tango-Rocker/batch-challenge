@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
-	bs "github.com/Tango-Rocker/batch-challange/business"
-	"github.com/Tango-Rocker/batch-challange/csv"
+	bs "github.com/Tango-Rocker/batch-challenge/business"
+	"github.com/Tango-Rocker/batch-challenge/csv"
 	"log/slog"
 	"os"
 	"time"

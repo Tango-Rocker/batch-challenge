@@ -36,11 +36,11 @@ set -e
 
 # Build the Go application
 echo "Building Go application..."
-go build -o batch-challenge-linux-amd64
+go build -o exec_app
 
 # Build the Docker image
 echo "Building Docker image..."
-docker build -t batch-challenge:latest .
+docker build -t batch:latest .
 
 # Start the entire stack using Docker Compose
 echo "Starting services with Docker Compose..."
