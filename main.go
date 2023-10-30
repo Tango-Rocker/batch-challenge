@@ -21,12 +21,10 @@ func main() {
 		slog.String("version", "0.0.1"),
 	)
 
-	/*mailCfg, err := utils.LoadEnvConfig[business.MailConfig]()
+	mailCfg, err := utils.LoadEnvConfig[business.MailConfig]()
 	if err != nil {
 		panic(err)
 	}
-	mailService := business.NewEmailService(mailCfg, logger)
-	*/
 	appCfg, err := utils.LoadEnvConfig[app.Config]()
 	if err != nil {
 		panic(err)
@@ -38,10 +36,22 @@ func main() {
 	}
 
 	parser := csv.NewCSVParser(appCfg.SchemaPath, logger)
+
+	relay := business.NewStreamRelayService(logger)
+
 	repository := setupRepository(dbCfg, logger)
 	writer := setupWriter(repository, logger)
 
-	app.New(appCfg, parser, writer, logger).Run(ctx)
+	mailService := business.NewEmailService(mailCfg, logger)
+	summarizer := business.NewSummaryService(mailService, logger)
+
+	app.New(
+		appCfg.SourcePath,
+		parser,
+		writer,
+		relay,
+		summarizer,
+		logger).Run(ctx)
 }
 
 func setupRepository(dbCfg *db.Config, logger *slog.Logger) *db.Repository {

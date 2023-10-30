@@ -42,14 +42,13 @@ func NewWriter(cfg *WriterConfig, repo *db.Repository, l *slog.Logger) *Writer {
 
 // Launch begins processing data from the data channel.
 func (w *Writer) Launch(ctx context.Context) {
-	go w.run(ctx)
+	if !w.running {
+		go w.run(ctx)
+	}
 }
 
 func (w *Writer) run(ctx context.Context) {
-	if w.running {
-		return
-	}
-	w.l.Info("Starting BufferedInsert worker")
+	w.l.Info("Starting BatchInsert Service")
 	w.running = true
 	timeout := time.NewTimer(w.flushTimeout)
 
@@ -67,6 +66,7 @@ func (w *Writer) run(ctx context.Context) {
 			if err := json.Unmarshal(jsonData, &record); err != nil {
 				w.l.Error("Error unmarshalling data: %v", err)
 				w.l.Error(string(jsonData))
+				//TODO: we need to signal that an error occurred
 				continue
 			}
 
@@ -97,6 +97,10 @@ func (w *Writer) flushBuffer(ctx context.Context) {
 		log.Printf("Error inserting data: %v", err)
 	}
 	w.buffer = w.buffer[:0] // Clear the buffer
+}
+
+func (w *Writer) GetInputChannel() chan []byte {
+	return w.dataChannel
 }
 func mapRecordToTransaction(record *csv.Record) (*model.Transaction, error) {
 	valuesJSON, err := json.Marshal(record.Values)

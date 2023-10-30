@@ -1,6 +1,9 @@
 package business
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+)
 
 type Summary struct {
 	ExecutionId   string
@@ -11,8 +14,9 @@ type Summary struct {
 }
 
 type SummaryService struct {
-	mail *EmailService
-	l    *slog.Logger
+	mail  *EmailService
+	l     *slog.Logger
+	input chan []byte
 }
 
 func NewSummaryService(mail *EmailService, l *slog.Logger) *SummaryService {
@@ -22,4 +26,10 @@ func NewSummaryService(mail *EmailService, l *slog.Logger) *SummaryService {
 	}
 }
 
-func
+func (s SummaryService) GetInputChannel() chan []byte {
+	return s.input
+}
+
+func (s SummaryService) Launch(ctx context.Context) {
+
+}

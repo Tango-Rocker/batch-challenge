@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"time"
 )
 
 var validatorsMap = map[string]Validator{
@@ -23,7 +24,7 @@ type Record struct {
 }
 
 type Parser interface {
-	Consume(executionID string, input io.Reader, output io.Writer) error
+	Consume(executionID string, input io.Reader, output chan []byte) error
 }
 
 type csvParser struct {
@@ -48,11 +49,7 @@ func NewCSVParser(schemaPath string, l *slog.Logger) Parser {
 		l:   l,
 	}
 }
-
-//TODO: do not break the loop on error, just log it and continue
-// or send it to an error queue for db insertion
-
-func (p *csvParser) Consume(executionId string, input io.Reader, output io.Writer) error {
+func (p *csvParser) Consume(executionId string, input io.Reader, output chan []byte) error {
 	p.l.Info("starting to consume csv file")
 	reader := csv.NewReader(input)
 
@@ -98,9 +95,11 @@ func (p *csvParser) Consume(executionId string, input io.Reader, output io.Write
 			continue
 		}
 
-		_, err = output.Write(rbytes)
-		if err != nil {
-			p.l.Error("error marshalling record", formatError(line, offset, err))
+		select {
+		case output <- rbytes:
+		case <-time.After(1 * time.Second):
+			err = fmt.Errorf("timeout sending record to output channel")
+			p.l.Error("error sending record to output channel", formatError(line, offset, err))
 		}
 	}
 
