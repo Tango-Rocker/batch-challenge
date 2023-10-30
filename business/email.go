@@ -2,7 +2,7 @@ package business
 
 import (
 	"crypto/tls"
-	"fmt"
+	"log/slog"
 
 	gomail "gopkg.in/mail.v2"
 )
@@ -20,9 +20,10 @@ type Emailer interface {
 type EmailService struct {
 	from   string
 	client *gomail.Dialer
+	l      *slog.Logger
 }
 
-func NewEmailService(cfg MailConfig) *EmailService {
+func NewEmailService(cfg *MailConfig, l *slog.Logger) *EmailService {
 	d := gomail.NewDialer(
 		cfg.Host,     //"smtp.gmail.com",
 		cfg.Port,     //587,
@@ -34,6 +35,7 @@ func NewEmailService(cfg MailConfig) *EmailService {
 	return &EmailService{
 		from:   cfg.Account,
 		client: d,
+		l:      l,
 	}
 }
 
@@ -45,10 +47,8 @@ func (eSrv *EmailService) Send(msg Mail) {
 	m.SetHeader("Subject", msg.Subject)
 	m.SetBody("text/plain", msg.Body)
 
-	if err := eSrv.client.DialAndSend(m); err != nil {
-		fmt.Println(err)
-		panic(err)
+	err := eSrv.client.DialAndSend(m)
+	if err != nil {
+		eSrv.l.Error(err.Error())
 	}
-
-	return
 }

@@ -1,6 +1,6 @@
 package business
 
-type WorkerConfig struct {
+type WriterConfig struct {
 	BufferSize   int `env:"BUFFER_SIZE" envDefault:"1000"`
 	FlushTimeout int `env:"FLUSH_TIMEOUT_MS" envDefault:"1000"`
 }

@@ -13,7 +13,6 @@ import (
 //TODO: make execution-id unique and add a model for it
 
 func main() {
-	business.Send()
 
 	ctx := context.Background()
 
@@ -22,6 +21,12 @@ func main() {
 		slog.String("version", "0.0.1"),
 	)
 
+	/*mailCfg, err := utils.LoadEnvConfig[business.MailConfig]()
+	if err != nil {
+		panic(err)
+	}
+	mailService := business.NewEmailService(mailCfg, logger)
+	*/
 	appCfg, err := utils.LoadEnvConfig[app.Config]()
 	if err != nil {
 		panic(err)
@@ -34,9 +39,9 @@ func main() {
 
 	parser := csv.NewCSVParser(appCfg.SchemaPath, logger)
 	repository := setupRepository(dbCfg, logger)
-	worker := setupInsertWorker(repository, logger)
+	writer := setupWriter(repository, logger)
 
-	app.New(appCfg, parser, worker).Run(ctx)
+	app.New(appCfg, parser, writer, logger).Run(ctx)
 }
 
 func setupRepository(dbCfg *db.Config, logger *slog.Logger) *db.Repository {
@@ -47,12 +52,12 @@ func setupRepository(dbCfg *db.Config, logger *slog.Logger) *db.Repository {
 	return repository
 }
 
-func setupInsertWorker(repository *db.Repository, logger *slog.Logger) *business.Worker {
-	bsCfg, err := utils.LoadEnvConfig[business.WorkerConfig]()
+func setupWriter(repository *db.Repository, logger *slog.Logger) *business.Writer {
+	bsCfg, err := utils.LoadEnvConfig[business.WriterConfig]()
 	if err != nil {
 		panic(err)
 	}
 
-	worker := business.NewWorker(bsCfg, repository, logger)
+	worker := business.NewWriter(bsCfg, repository, logger)
 	return worker
 }

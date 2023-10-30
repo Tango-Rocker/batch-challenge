@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Tango-Rocker/batch-challange/business"
 	"github.com/Tango-Rocker/batch-challange/csv"
+	"log/slog"
 	"os"
 	"time"
 )
@@ -13,33 +14,35 @@ import (
 // dont really care what kind of io is it really
 
 type Application struct {
-	*Config
-	parser csv.Parser
-	writer *business.Worker
+	sourcePath string
+	parser     csv.Parser
+	writer     *business.Writer
+	l          *slog.Logger
 }
 
-func New(config *Config, p csv.Parser, w *business.Worker) *Application {
+func New(path string, p csv.Parser, w *business.Writer, l *slog.Logger) *Application {
 	return &Application{
-		Config: config,
-		parser: p,
-		writer: w,
+		sourcePath: path,
+		parser:     p,
+		writer:     w,
+		l:          l,
 	}
 }
 
 func (app *Application) Run(ctx context.Context) {
-	fmt.Println("reading from source: ", app.SourcePath)
-	sourceFile, err := os.Open(app.SourcePath)
+	fmt.Println("reading from source: ", app.sourcePath)
+	sourceFile, err := os.Open(app.sourcePath)
 	if err != nil {
 		panic(err)
 	}
 	defer sourceFile.Close()
 
-	go app.writer.Start(ctx)
+	app.writer.Launch(ctx)
 
-	if err := app.parser.Consume(newExecutionID(sourceFile.Name()), sourceFile, app.writer); err != nil {
-		fmt.Println("Validation error:", err)
+	err = app.parser.Consume(newExecutionID(sourceFile.Name()), sourceFile, app.writer)
+	if err != nil {
+		app.l.Error(err.Error())
 	}
-
 }
 
 func newExecutionID(srcName string) string {

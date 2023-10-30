@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// Worker processes data and communicates with the repository.
-type Worker struct {
+// Writer processes data and communicates with the repository.
+type Writer struct {
 	running      bool
 	repo         *db.Repository
 	dataChannel  chan []byte
@@ -23,14 +23,14 @@ type Worker struct {
 	l            *slog.Logger
 }
 
-func (w *Worker) Write(p []byte) (n int, err error) {
+func (w *Writer) Write(p []byte) (n int, err error) {
 	w.dataChannel <- p
 	return len(p), nil
 }
 
-// NewWorker creates a new Worker instance.
-func NewWorker(cfg *WorkerConfig, repo *db.Repository, l *slog.Logger) *Worker {
-	return &Worker{
+// NewWriter creates a new Writer instance.
+func NewWriter(cfg *WriterConfig, repo *db.Repository, l *slog.Logger) *Writer {
+	return &Writer{
 		repo:         repo,
 		dataChannel:  make(chan []byte),
 		bufferSize:   cfg.BufferSize,
@@ -40,8 +40,12 @@ func NewWorker(cfg *WorkerConfig, repo *db.Repository, l *slog.Logger) *Worker {
 	}
 }
 
-// Start begins processing data from the data channel.
-func (w *Worker) Start(ctx context.Context) {
+// Launch begins processing data from the data channel.
+func (w *Writer) Launch(ctx context.Context) {
+	go w.run(ctx)
+}
+
+func (w *Writer) run(ctx context.Context) {
 	if w.running {
 		return
 	}
@@ -88,7 +92,7 @@ func (w *Worker) Start(ctx context.Context) {
 }
 
 // flushBuffer inserts the buffered data records into the database.
-func (w *Worker) flushBuffer(ctx context.Context) {
+func (w *Writer) flushBuffer(ctx context.Context) {
 	if err := w.repo.InsertData(ctx, w.buffer); err != nil {
 		log.Printf("Error inserting data: %v", err)
 	}
