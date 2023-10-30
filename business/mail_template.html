@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monthly Summary</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border: 1px solid #dedede;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #4a90e2;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .summary-image {
+            display: block;
+            max-width: 100px; /* Adjust as needed */
+            height: auto;
+            margin: 10px auto;
+            border: none;
+            border-radius: 4px;
+        }
+        .summary-section {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4a90e2;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .summary-section strong {
+            color: #333;
+            font-size: 18px;
+        }
+        .summary-section p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .summary-section:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .transactions-table th,
+        .transactions-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .transactions-table th {
+            background-color: #4a90e2;
+            color: white;
+        }
+        .transactions-table td {
+            background-color: #f9f9f9;
+        }
+        .transactions-table tr:hover td {
+            background-color: #e7f4ff;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Monthly Card Summary</h1>
+    <p>Dear customer,</p>
+    <p>Here is your card summary:</p>
+    <div class="summary-section">
+        <strong>Total balance is {{printf "%.2f" .TotalBalance}}</strong>
+    </div>
+    <table class="transactions-table">
+        <thead>
+        <tr>
+            <th>Month</th>
+            <th>Transactions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range $month, $transactions := .TransactionsByMonth}}
+        <tr>
+            <td>{{$month}}</td>
+            <td>{{$transactions}}</td>
+        </tr>
+        {{end}}
+        </tbody>
+    </table>
+    <div class="summary-section">
+        <p>Average debit amount: {{printf "%.2f" .AvgDebit}}</p>
+        <p>Average credit amount: {{printf "%.2f" .AvgCredit}}</p>
+    </div>
+</div>
+</body>
+</html>

@@ -9,12 +9,9 @@ import (
 )
 
 func main() {
-	// Open a file for writing
-	fileName := os.Args[0]
-	if fileName == "" {
-		fileName = time.Now().String() + "-transactions-file"
-	}
 
+	fileName := "data-" + time.Now().Format("2006-01-02:15:04")
+	println("Generating file: " + fileName)
 	file, err := os.Create(fileName + ".csv")
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -33,8 +30,8 @@ func main() {
 
 	for i := 0; i < numRecords; i++ {
 		id := fmt.Sprintf("%d", i+1)
-		month := rand.Intn(12) + 1 // random month (1-12)
-		day := rand.Intn(28) + 1   // random day (1-28)
+		month := rand.Intn(2) + 6 // random month (1-12)
+		day := rand.Intn(28) + 1  // random day (1-28)
 		date := fmt.Sprintf("%02d/%d", month, day)
 		transactionValue := fmt.Sprintf("%+0.3f", rand.Float64()*500-250)
 

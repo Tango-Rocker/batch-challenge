@@ -45,7 +45,7 @@ func (eSrv *EmailService) Send(msg Mail) {
 	m.SetHeader("From", eSrv.from)
 	m.SetHeader("To", msg.To)
 	m.SetHeader("Subject", msg.Subject)
-	m.SetBody("text/plain", msg.Body)
+	m.SetBody("text/html", msg.Body)
 
 	err := eSrv.client.DialAndSend(m)
 	if err != nil {

@@ -20,10 +20,18 @@ This guide covers the essentials to get the Batch Processing Application up and 
 
 Set the following environment variables for the docker-compose file or use a `.env` file:
 
+### Database variables
 - Database credentials: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`
 - Data paths: `DATA_PATH`  
   this is the path to the directory containing the CSV file to be processed ("data.csv" as default)
-- Mail server settings (if needed)
+
+### Mail server variables
+default values are provided for all of these but `TARGET_MAIL` which is required
+
+- `SMTP_HOST` 
+- `SMTP_PORT` 
+- `SMTP_USER` 
+- `SMTP_PASS`
 
 ## Generating .csv
 

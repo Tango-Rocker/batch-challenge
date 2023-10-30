@@ -1,25 +1,40 @@
 package business
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"github.com/Tango-Rocker/batch-challenge/csv"
+	"html/template"
+	"log"
 	"log/slog"
+	"os"
 	"time"
 )
 
+//go:embed *.html
+var mailTemplateBytes []byte
+
+// Summary holds all the summary information.
 type Summary struct {
-	ExecutionId   string
-	AccountId     string
-	TotalBalance  float64
-	TotalRecords  int
-	AmountByMonth map[string]float64
+	TotalBalance              float64
+	TransactionsByMonth       map[string]int
+	TotalDebitByMonth         map[string]float64
+	DebitTransactionsByMonth  map[string]int
+	TotalCreditByMonth        map[string]float64
+	CreditTransactionsByMonth map[string]int
 }
 
+// NewSummary creates a new instance of Summary with initialized maps.
 func NewSummary() *Summary {
 	return &Summary{
-		AmountByMonth: make(map[string]float64),
+		TransactionsByMonth:       make(map[string]int),
+		TotalDebitByMonth:         make(map[string]float64),
+		DebitTransactionsByMonth:  make(map[string]int),
+		TotalCreditByMonth:        make(map[string]float64),
+		CreditTransactionsByMonth: make(map[string]int),
 	}
 }
 
@@ -83,10 +98,15 @@ func (srv *SummaryService) run(ctx context.Context) {
 			}
 
 			sum.TotalBalance += trx.Amount
-			sum.TotalRecords++
-
 			month := extractMonth(trx.Date)
-			sum.AmountByMonth[month] += trx.Amount // Simplify map operations with compound assignment.
+			sum.TransactionsByMonth[month]++
+			if trx.Amount < 0 {
+				sum.TotalDebitByMonth[month] += trx.Amount
+				sum.DebitTransactionsByMonth[month]++
+			} else {
+				sum.TotalCreditByMonth[month] += trx.Amount
+				sum.CreditTransactionsByMonth[month]++
+			} // Simplify map operations with compound assignment.
 		}
 	}
 
@@ -96,7 +116,7 @@ func (srv *SummaryService) run(ctx context.Context) {
 	case <-srv.successSignal:
 		srv.l.Info("Sending email")
 		srv.mail.Send(Mail{
-			To:      findMail(sum.AccountId),
+			To:      findMail("stub"),
 			Subject: "Stori Account Balance",
 			Body:    serializeSummary(sum),
 		})
@@ -105,35 +125,64 @@ func (srv *SummaryService) run(ctx context.Context) {
 	}
 }
 
-var mailTemplate = `
-	Dear customer,
-	Here is your card summary for theses months:
-
-	Total Balance: %f
-	Total Transactions: %d	
-`
-
-var byMothTemplate = `
-	%s: %f
-`
-
-// serializeSummary converts a Summary struct to human readable mail template
 func serializeSummary(sum *Summary) string {
-	ret := ""
-
-	ret += fmt.Sprintf(mailTemplate, sum.TotalBalance, sum.TotalRecords)
-
-	for k, v := range sum.AmountByMonth {
-		ret += fmt.Sprintf(byMothTemplate, k, v)
+	t, err := template.New("email").Funcs(template.FuncMap{"printf": fmt.Sprintf}).Parse(string(mailTemplateBytes))
+	if err != nil {
+		log.Println("Error parsing template:", err)
+		return ""
 	}
 
-	return ret
-}
+	// Calculate the average debit and credit
+	var totalDebitAmount, totalCreditAmount float64
+	var debitCount, creditCount int
+	for _, amount := range sum.TotalDebitByMonth {
+		totalDebitAmount += amount
+		debitCount++
+	}
+	for _, amount := range sum.TotalCreditByMonth {
+		totalCreditAmount += amount
+		creditCount++
+	}
 
-func extractMonth(date string) string {
-	return "September" //stub
+	// Avoid division by zero
+	avgDebit := 0.0
+	if debitCount > 0 {
+		avgDebit = totalDebitAmount / float64(debitCount)
+	}
+	avgCredit := 0.0
+	if creditCount > 0 {
+		avgCredit = totalCreditAmount / float64(creditCount)
+	}
+
+	// Prepare the data for the template
+	data := struct {
+		*Summary
+		AvgDebit  float64
+		AvgCredit float64
+	}{
+		Summary:   sum,
+		AvgDebit:  avgDebit,
+		AvgCredit: avgCredit,
+	}
+
+	var ret bytes.Buffer
+	if err := t.Execute(&ret, data); err != nil {
+		log.Println("Error executing template:", err)
+		return ""
+	}
+
+	return ret.String()
+}
+func extractMonth(dateStr string) string {
+	// Parse the date string into a time.Time object.
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return "temporally unavailable:"
+	}
+	// Return the full month name.
+	return date.Month().String()
 }
 
 func findMail(id string) string {
-	return "alejandroevidal1@gmail.com" //stub
+	return os.Getenv("TARGET_MAIL") //stub
 }

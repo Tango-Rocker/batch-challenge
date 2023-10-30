@@ -13,6 +13,7 @@ services:
       - MAIL_SERVER_PORT=587
       - MAIL_ACCOUNT=batchappdemo555@gmail.com
       - MAIL_PASSWORD=obtp phtd dyse egat
+      - TARGET_MAIL=
       - DATA_PATH=/app/data/data.csv
       - SCHEMA_PATH=/app/basic_schema.json
     depends_on:
