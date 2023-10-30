@@ -6,20 +6,54 @@ This document outlines the `batch-challenge` project, a Go application designed 
 
 The application leverages concurrency to process large CSV files efficiently. It uses a modular design with distinct components handling parsing, writing, relaying streams, and summarizing data. T
 he project is configured to run in a Docker environment, with PostgreSQL as the database backend.
+# Quick Start Guide
 
-## Requirements
+This guide covers the essentials to get the Batch Processing Application up and running using Docker and Docker Compose.
 
-- Go programming language
-- Docker and Docker Compose
-- PostgreSQL database
-- SMTP server credentials for email notifications
+## Prerequisites
+
+- Go 1.21
+- Docker
+- Docker Compose
 
 ## Configuration
 
-Configuration is managed through environment variables. These include paths to the data and schema files (`DATA_PATH`), 
-database connection details (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`),
-and email server settings (`MAIL_SERVER_HOST`, `MAIL_SERVER_PORT`, `MAIL_ACCOUNT`, `MAIL_PASSWORD`).
+Set the following environment variables for the docker-compose file or use a `.env` file:
 
+- Database credentials: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`
+- Data paths: `DATA_PATH`
+- Mail server settings (if needed)
+
+## Build and Run
+
+Execute the following script to build and start the application:
+
+```bash
+#!/bin/bash
+
+# Stop on the first sign of trouble
+set -e
+
+# Build the Go application
+echo "Building Go application..."
+go build -o batch-challenge-linux-amd64
+
+# Build the Docker image
+echo "Building Docker image..."
+docker build -t batch-challenge:latest .
+
+# Start the entire stack using Docker Compose
+echo "Starting services with Docker Compose..."
+docker-compose up -d
+
+# Tail the application logs
+echo "Tailing application logs..."
+docker-compose logs -f app
+```
+
+Save this script as `start.sh`, make it executable with `chmod +x start.sh`, and run it with `./start.sh`.
+
+This guide and script provide a streamlined process to build and run the application.
 ## Components
 
 - `Parser`: Reads and validates CSV files according to a defined schema.
@@ -28,19 +62,7 @@ and email server settings (`MAIL_SERVER_HOST`, `MAIL_SERVER_PORT`, `MAIL_ACCOUNT
 - `SummaryService`: Aggregates transaction data and sends a summary report via email.
 - `EmailService`: Configures and sends emails using provided SMTP settings.
 
-## Running the Application
-
-To run the application:
-
-1. Configure your environment variables as needed.
-2. Use Docker Compose to build and start the services defined in `docker-compose.yml`.
-3. The application will begin processing data as per the CSV file specified in the `DATA_PATH`.
-
-## Deployment
-
-- A Dockerfile is included for building the application image.
-- Use the provided `docker-compose.yml` to deploy the application along with its database.
-
+This guide and script provide a streamlined process to build and run the application.
 # Technical Architecture
 
 ## Component Descriptions

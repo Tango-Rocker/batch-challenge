@@ -9,7 +9,9 @@ services:
       - DB_USER=user
       - DB_PASS=password
       - DB_NAME=batchdb
-      - DATA_PATH=/app/data  # The environment variable pointing to the mounted directory
+      - DATA_PATH=/app/data
+      - SCHEMA_PATH=/app/schema.json
+      - # The environment variable pointing to the mounted directory
     depends_on:
       - db
     ports:
