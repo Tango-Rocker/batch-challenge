@@ -1,4 +1,4 @@
-# `README.md` for Batch Processing Application
+## Batch-Challenge
 
 This document outlines the `batch-challenge` project, a Go application designed to parse CSV data, process transactions, and generate summaries.
 
