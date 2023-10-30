@@ -29,7 +29,7 @@ func main() {
 	writer.Write([]string{"id", "date", "amount"})
 
 	// Number of records to generate
-	numRecords := 10000
+	numRecords := 100000
 
 	for i := 0; i < numRecords; i++ {
 		id := fmt.Sprintf("%d", i+1)

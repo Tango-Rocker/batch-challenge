@@ -89,9 +89,7 @@ func (w *Writer) run(ctx context.Context) {
 				timeout.Reset(w.flushTimeout)
 			}
 		case <-timeout.C:
-			if len(w.buffer) > 0 {
-				w.flushBuffer(ctx)
-			}
+			w.flushBuffer(ctx)
 			timeout.Reset(w.flushTimeout)
 		}
 	}
@@ -99,10 +97,13 @@ func (w *Writer) run(ctx context.Context) {
 
 // flushBuffer inserts the buffered data records into the database.
 func (w *Writer) flushBuffer(ctx context.Context) {
-	if err := w.repo.InsertData(ctx, w.buffer); err != nil {
-		log.Printf("Error inserting data: %v", err)
+	if len(w.buffer) > 0 {
+
+		if err := w.repo.InsertData(ctx, w.buffer); err != nil {
+			log.Printf("Error inserting data: %v", err)
+		}
+		w.buffer = w.buffer[:0] // Clear the buffer
 	}
-	w.buffer = w.buffer[:0] // Clear the buffer
 }
 
 func (w *Writer) GetInputChannel() chan []byte {

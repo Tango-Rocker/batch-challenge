@@ -1,53 +1,77 @@
-# Batch-Challenge
+# `README.md` for Batch Processing Application
+
+This document outlines the `batch-challenge` project, a Go application designed to parse CSV data, process transactions, and generate summaries.
 
 ## Overview
-Simple batch processing system designed to read, validate, and process monthly payment records from CSV files.
 
-## Prerequisites
+The application leverages concurrency to process large CSV files efficiently. It uses a modular design with distinct components handling parsing, writing, relaying streams, and summarizing data. The project is configured to run in a Docker environment, with PostgreSQL as the database backend.
 
-- Docker
-- Docker Compose
+## Requirements
 
-## installation
-To install the application, follow these steps:
+- Go programming language
+- Docker and Docker Compose
+- PostgreSQL database
+- SMTP server credentials for email notifications
 
-- Clone the repository to your local machine.
-- Navigate to the root directory of the project.
-- Run the installation script:
-- chmod +x install.sh
-- ./install.sh
+## Configuration
 
-#### The script will interactively guide you through the setup process including:
+Configuration is managed through environment variables. These include paths to the data and schema files (`DATA_PATH`, `SCHEMA_PATH`), database connection details (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`), and email server settings (`MAIL_SERVER_HOST`, `MAIL_SERVER_PORT`, `MAIL_ACCOUNT`, `MAIL_PASSWORD`).
 
-- Prompting for the directory path for storing app data.
-- Building the application binary.
-- Verifying the presence of Docker and Docker Compose, with an option to install if they're missing.
-- Setting up and starting the Docker containers for the app and the database.
+## Components
 
- 
-## Technical Aspects
+- `Parser`: Reads and validates CSV files according to a defined schema.
+- `Writer`: Buffers and writes the parsed transactions to the database.
+- `StreamRelayService`: Manages the propagation of data to the writer and summarizer.
+- `SummaryService`: Aggregates transaction data and sends a summary report via email.
+- `EmailService`: Configures and sends emails using provided SMTP settings.
+
+## Running the Application
+
+To run the application:
+
+1. Configure your environment variables as needed.
+2. Use Docker Compose to build and start the services defined in `docker-compose.yml`.
+3. The application will begin processing data as per the CSV file specified in the `DATA_PATH`.
+
+## Deployment
+
+- A Dockerfile is included for building the application image.
+- Use the provided `docker-compose.yml` to deploy the application along with its database.
+
+# Technical Architecture
+
+## Component Descriptions
+
+### Application (`Application`)
+The central orchestrator that initializes all services and triggers the processing flow.
+
+### Parser (`csv.Parser`)
+Responsible for consuming CSV files. It validates and transforms the data based on a schema definition and sends the data to the `StreamRelayService`.
+
+### StreamRelayService (`business.StreamRelayService`)
+Acts as a conduit, taking in parsed data from the `Parser` and distributing it to both the `Writer` and `SummaryService` through a subscription system
+
+### Writer (`business.Writer`)
+Buffers the data and periodically flushes this buffer to the `Database`. It listens for data from the `StreamRelayService`.
+
+### SummaryService (`business.SummaryService`)
+Aggregates data for summary and sends an email report. It receives data from the `StreamRelayService` and utilizes the `EmailService` to dispatch emails.
 
 
+### Database (`db.Repository`)
+Persistently stores transaction records. It is accessed by the `Writer` to insert data records.
 
-The system comprises multiple Go packages, each with a specific role:
+### EmailService (`business.EmailService`)
+Configures and sends out emails. Used by the `SummaryService` to send out summary reports to users.
 
-- **Main Package**: Orchestrates the application's flow, loading configuration, and setting up dependencies.
-- **App Package**: Defines the core application structure, managing the file reading process and coordinating goroutines for concurrent processing.
-- **CSV Package**: Handles the parsing and validation of CSV files according to a defined schema, utilizing various validators for different data types.
+## Data Flow
 
-## Configuration and Schema
+1. **Initialization**: The `Application` starts and initializes all components, setting up their interconnections.
+2. **Parsing**: The `Parser` reads the CSV file, validates, and transforms the data.
+3. **Relaying**: The `StreamRelayService` receives parsed data and relays it to both the `Writer` and `SummaryService`.
+4. **Writing**: The `Writer` buffers transactions and writes them to the `Database` at set intervals or buffer sizes.
+5. **Summarizing**: Concurrently, the `SummaryService` aggregates data to create a summary report.
+6. **Emailing**: Once the summary is ready, the `SummaryService` sends it via the `EmailService`.
 
-- The application configuration is loaded at runtime, specifying paths for the source CSV and schema definition.
-- The schema is defined in JSON format, detailing the required columns, their data types, and any additional validation formats or rules.
+![img.png](img.png)
 
-## Processing Flow
-
-1. The main function initializes the application by loading the configuration and setting up CSV parsing dependencies.
-2. The `Application` struct, containing configuration and parser, manages the reading from the source CSV file.
-3. A channel is used to pass valid records from the CSV reader to the processor, which can then construct the desired output.
-4. The application employs synchronization primitives to ensure that all go-routines complete their execution before the application exits.
-
-## Validation and Transformation
-
-- Each CSV record is validated against the schema definition to ensure the correct format and data types.
-- Custom validators are used for different column types, with the ability to transform data (e.g., dates) into a consistent format.
